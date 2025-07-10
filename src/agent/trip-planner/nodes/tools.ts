@@ -44,8 +44,17 @@ export async function callTools(
   const response = await llm.invoke([
     {
       role: "system",
-      content:
-        "You are an AI assistant who helps users book trips. Use the user's most recent message(s) to contextually generate a response.",
+      content: `You are an AI assistant who helps users book trips. When a user asks about a trip or destination, you should:
+1. Use the list-accommodations tool to show available accommodations
+2. Use the list-restaurants tool to show local dining options
+
+These tools should be used for ANY trip-related query, even if the user hasn't specifically asked about accommodations or restaurants yet.
+
+Current trip details:
+- Location: ${state.tripDetails.location}
+- Start Date: ${state.tripDetails.startDate}
+- End Date: ${state.tripDetails.endDate}
+- Number of Guests: ${state.tripDetails.numberOfGuests}`,
     },
     ...state.messages,
   ]);

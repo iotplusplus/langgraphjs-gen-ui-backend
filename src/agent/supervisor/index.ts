@@ -11,6 +11,7 @@ import {
 import { generalInput } from "./nodes/general-input";
 import { router } from "./nodes/router";
 import { graph as writerAgentGraph } from "../writer-agent";
+import { mem0Node } from "./nodes/mem0-node";
 
 export const ALL_TOOL_DESCRIPTIONS = `- stockbroker: can fetch the price of a ticker, purchase/sell a ticker, or get the user's portfolio
 - tripPlanner: helps the user plan their trip. it can suggest restaurants, and places to stay in any given location.
@@ -31,13 +32,17 @@ function handleRoute(
 }
 
 const builder = new StateGraph(SupervisorAnnotation, SupervisorZodConfiguration)
-  .addNode("router", router)
+  const builder = new StateGraph(SupervisorAnnotation, SupervisorZodConfiguration)
+  .addNode("mem0", mem0Node)                 // ✅ Mem0 node to log memory
+  .addNode("router", router) 
   .addNode("stockbroker", stockbrokerGraph)
   .addNode("tripPlanner", tripPlannerGraph)
   .addNode("openCode", openCodeGraph)
   .addNode("orderPizza", orderPizzaGraph)
   .addNode("generalInput", generalInput)
   .addNode("writerAgent", writerAgentGraph)
+  .addEdge(START, "mem0")                    // ✅ Start -> Mem0
+  .addEdge("mem0", "router")  
   .addConditionalEdges("router", handleRoute, [
     "stockbroker",
     "tripPlanner",
@@ -46,7 +51,6 @@ const builder = new StateGraph(SupervisorAnnotation, SupervisorZodConfiguration)
     "generalInput",
     "writerAgent",
   ])
-  .addEdge(START, "router")
   .addEdge("stockbroker", END)
   .addEdge("tripPlanner", END)
   .addEdge("openCode", END)
@@ -56,3 +60,4 @@ const builder = new StateGraph(SupervisorAnnotation, SupervisorZodConfiguration)
 
 export const graph = builder.compile();
 graph.name = "Generative UI Agent";
+

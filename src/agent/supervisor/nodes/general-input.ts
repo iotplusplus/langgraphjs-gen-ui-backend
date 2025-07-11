@@ -1,6 +1,8 @@
 import { SupervisorState, SupervisorUpdate } from "../types";
 import { ALL_TOOL_DESCRIPTIONS } from "../index";
 import { ChatOpenAI } from "@langchain/openai";
+import { HumanMessage, AIMessage, BaseMessage, SystemMessage } from '@langchain/core/messages';
+import { Memory } from 'mem0ai/oss';
 
 const USER_PROFILE = {
       "id": "user123",
@@ -29,24 +31,60 @@ const USER_PROFILE = {
 
 export async function generalInput(
   state: SupervisorState,
+  mem0Instance: Memory 
 ): Promise<SupervisorUpdate> {
-  const GENERAL_INPUT_SYSTEM_PROMPT = `You are a friendly and cheerful assistant, here to help out to your friend .Here is the background of your friend from ${USER_PROFILE} give some personal touch in language to show friendliness.
-If the user asks what you can do, describe these tools.
-${ALL_TOOL_DESCRIPTIONS}
+  const latestHumanMessage = state.messages.findLast((msg) => msg._type === "human");
+  let retrievedMemories = '';
 
+  if (latestHumanMessage) {
+    console.log(`Searching Mem0 for context related to: "${latestHumanMessage.content}"`);
+    try {
+      const searchResult: any = await mem0Instance.search(latestHumanMessage.content as string);
+      const memories: any[] = searchResult.results || []; 
 
-If the last message is a tool result, describe what the action was, congratulate the user, or send a friendly followup in response to the tool action. Ensure this is a clear and concise message.
+      if (memories.length > 0) {
+        retrievedMemories = `\n\n**Relevant past memories:**\n${memories.map((m: any) => m.memory).join('\n')}`;
+        console.log("Memories retrieved successfully.");
+      } else {
+        console.log("No relevant memories found for this query.");
+      }
+    } catch (error) {
+      console.error("Error searching Mem0:", error);
+      retrievedMemories = "\n\n(Memory retrieval failed)";
+    }
+  }
 
-Otherwise, just answer as normal.`;
+  const GENERAL_INPUT_SYSTEM_PROMPT = `You are a friendly and cheerful assistant, here to help out your friend.
+  Here is the background of your friend from ${JSON.stringify(USER_PROFILE, null, 2)}.
+  ${retrievedMemories}
+  Give some personal touch in language to show friendliness.
+
+  If the user asks what you can do, describe these tools:
+  ${ALL_TOOL_DESCRIPTIONS}
+
+  If the last message is a tool result, describe what the action was, congratulate the user, or send a friendly followup in response to the tool action. Ensure this is a clear and concise message.
+
+  Otherwise, just answer as normal.`;
 
   const llm = new ChatOpenAI({ model: "gpt-4o-mini", temperature: 0 });
-  const response = await llm.invoke([
-    {
-      role: "system",
-      content: GENERAL_INPUT_SYSTEM_PROMPT,
-    },
-    ...state.messages,
-  ]);
+
+  const messagesForLLM: BaseMessage[] = [
+    new SystemMessage(GENERAL_INPUT_SYSTEM_PROMPT),
+    ...state.messages.filter(msg => msg._type !== "system"),
+  ];
+
+  const response = await llm.invoke(messagesForLLM);
+
+  if (latestHumanMessage) {
+    const fullExchange = `User: ${latestHumanMessage.content}\nAssistant: ${response.content}`;
+    console.log(`Adding recent exchange to Mem0 from generalInput: "${fullExchange.substring(0, Math.min(fullExchange.length, 100))}..."`);
+    try {
+      await mem0Instance.add(fullExchange);
+      console.log("Exchange added to Mem0 successfully by generalInput.");
+    } catch (error) {
+      console.error("Error adding to Mem0 from generalInput:", error);
+    }
+  }
 
   return {
     messages: [response],

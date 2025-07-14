@@ -16,7 +16,7 @@ const config = {
 };
 
 
-const mem = new Memory();
+const mem = new Memory(config);
 export async function mem0Node(
   state: SupervisorState
 ): Promise<SupervisorUpdate> {

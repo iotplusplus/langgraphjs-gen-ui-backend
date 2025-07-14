@@ -1,5 +1,20 @@
 import { SupervisorState, SupervisorUpdate } from "../types";
 import { Memory } from "mem0ai/oss";
+import dotenv from "dotenv";
+dotenv.config();
+
+const config = {
+  enableGraph: true,
+  graphStore: {
+    provider: "neo4j",
+    config: {
+      url: process.env.NEO4J_URL!,
+      username: process.env.NEO4J_USERNAME!,
+      password: process.env.NEO4J_PASSWORD!,
+    },
+  },
+};
+
 
 const mem = new Memory();
 export async function mem0Node(

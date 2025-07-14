@@ -11,16 +11,12 @@ import {
 import { generalInput } from "./nodes/general-input";
 import { router } from "./nodes/router";
 import { graph as writerAgentGraph } from "../writer-agent";
-import { Memory } from 'mem0ai/oss'; 
 
 export const ALL_TOOL_DESCRIPTIONS = `- stockbroker: can fetch the price of a ticker, purchase/sell a ticker, or get the user's portfolio
 - tripPlanner: helps the user plan their trip. it can suggest restaurants, and places to stay in any given location.
 - openCode: can write a React TODO app for the user. Only call this tool if they request a TODO app.
 - orderPizza: can order a pizza for the user
 - writerAgent: can write a text document for the user. Only call this tool if they request a text document.`;
-
-const mem0Instance = new Memory();
-console.log("Mem0 AI instance initialized for Supervisor Agent.");
 
 function handleRoute(
   state: SupervisorState,
@@ -34,21 +30,13 @@ function handleRoute(
   return state.next;
 }
 
-const generalInputNode = async (state: SupervisorState) => {
-    return generalInput(state, mem0Instance);
-};
-
-const routerNode = async (state: SupervisorState) => {
-    return router(state, mem0Instance); 
-};
-
 const builder = new StateGraph(SupervisorAnnotation, SupervisorZodConfiguration)
-  .addNode("router", routerNode) 
+  .addNode("router", router)
   .addNode("stockbroker", stockbrokerGraph)
   .addNode("tripPlanner", tripPlannerGraph)
   .addNode("openCode", openCodeGraph)
   .addNode("orderPizza", orderPizzaGraph)
-  .addNode("generalInput", generalInputNode) 
+  .addNode("generalInput", generalInput)
   .addNode("writerAgent", writerAgentGraph)
   .addConditionalEdges("router", handleRoute, [
     "stockbroker",

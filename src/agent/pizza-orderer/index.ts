@@ -1,4 +1,3 @@
-import { ChatAnthropic } from "@langchain/anthropic";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { GenerativeUIAnnotation } from "../types";
 import { z } from "zod";

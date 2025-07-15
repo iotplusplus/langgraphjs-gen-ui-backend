@@ -5,6 +5,7 @@ import {
   StateGraph,
 } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
+import { manageContextLength } from "../../utils/context-manager";
 
 const ChatAgentAnnotation = Annotation.Root({
   messages: MessagesAnnotation.spec["messages"],
@@ -16,10 +17,13 @@ const graph = new StateGraph(ChatAgentAnnotation)
       model: "gpt-4o-mini",
     });
 
-    const response = await model.invoke([
-      { role: "system", content: "You are a helpful assistant." },
+    // Manage context length to prevent token limit errors
+    const managedMessages = manageContextLength([
+      { role: "system", content: "You are a helpful assistant." } as any,
       ...state.messages,
     ]);
+
+    const response = await model.invoke(managedMessages);
 
     return {
       messages: response,

@@ -1,6 +1,7 @@
 import { SupervisorState, SupervisorUpdate } from "../types";
 import { ALL_TOOL_DESCRIPTIONS } from "../index";
 import { ChatOpenAI } from "@langchain/openai";
+import { manageContextLength } from "../../../utils/context-manager";
 
 const USER_PROFILE = {
       "id": "user123",
@@ -40,13 +41,17 @@ If the last message is a tool result, describe what the action was, congratulate
 Otherwise, just answer as normal.`;
 
   const llm = new ChatOpenAI({ model: "gpt-4o-mini", temperature: 0 });
-  const response = await llm.invoke([
+  
+  // Manage context length to prevent token limit errors
+  const managedMessages = manageContextLength([
     {
       role: "system",
       content: GENERAL_INPUT_SYSTEM_PROMPT,
-    },
+    } as any,
     ...state.messages,
   ]);
+  
+  const response = await llm.invoke(managedMessages);
 
   return {
     messages: [response],

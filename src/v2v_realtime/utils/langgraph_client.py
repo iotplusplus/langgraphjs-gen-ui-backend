@@ -51,8 +51,8 @@ def send_message(thread_id: str, user_message: str, max_wait: int = 15):
         for step in history:
             messages = step.get("values", {}).get("messages", [])
             for msg in messages:
-                if msg.get("type") == "ai":
-                    ai_messages.append(msg)
+                if msg.get("type") == "ai" and "content" in msg:
+                    ai_messages.append(msg["content"])
         if ai_messages:
             break
         time.sleep(1)
@@ -65,5 +65,4 @@ if __name__ == "__main__":
     user_message = input("Enter your message: ")
     ai_messages = send_message(thread_id, user_message)
     print("\n--- Assistant Replies ---")
-    for msg in ai_messages:
-        print(msg)
+    print(ai_messages)

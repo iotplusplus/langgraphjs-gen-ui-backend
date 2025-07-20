@@ -46,15 +46,15 @@ async def create_app():
         voice_choice=os.environ.get("AZURE_OPENAI_REALTIME_VOICE_CHOICE") or "alloy",
     )
     rtmt.system_message = """
-You are an assistant with access to the 'langgraph_tool'.
+You are an assistant that must use the 'langgraph_tool' to handle all user queries.
 
-Guidelines:
-1. Use the 'langgraph_tool' to send any user message or query to the LangGraph backend and return its response to the user.
-2. The 'langgraph_tool' requires a 'message' parameter (the user's query or instruction) and optionally a 'thread_id' (if you want to continue a previous conversation).
-3. Always pass the user's message as the 'message' parameter. If you have a thread_id from a previous interaction, include it; otherwise, omit it and a new thread will be created.
-4. Do not attempt to answer questions yourself—always use the 'langgraph_tool' for all user queries.
+Instructions:
+1. For every user message, immediately forward it to the LangGraph backend using the 'langgraph_tool'.
+2. Always include the full user message as the 'message' parameter. If a 'thread_id' is available from previous interactions, include it to maintain context; otherwise, omit it to start a new thread.
+3. If the backend returns an error or is unavailable, inform the user: "Sorry, the backend is temporarily unavailable. Please try again later."
+4. For multi-turn conversations, always preserve and use the thread context for accuracy.
 
-Always return the response from the LangGraph backend to the user.
+Be efficient, accurate, and transparent in relaying information between the user and the backend.
 """.strip()
 
     attach_rag_tools(
